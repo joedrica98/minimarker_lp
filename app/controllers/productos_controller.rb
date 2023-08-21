@@ -1,6 +1,22 @@
 class ProductosController < ApplicationController
     skip_before_action :verify_authenticity_token
+
+     # GET /productos
+    def index
+        if params[:nombre]
+          @productos = Producto.where('nombre LIKE ?', "%#{params[:nombre]}%")
+        else
+          @productos = Producto.all
+        end
+        render json: @productos
+      end
   
+    # GET /productos/:id
+    def show
+      @producto = Producto.find(params[:id])
+      render json: @producto
+    end
+    
     # POST /productos
     def create
       @producto = Producto.new(product_params)
