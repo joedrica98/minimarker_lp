@@ -72,6 +72,31 @@ class ProductosController < ApplicationController
       end
     end
     
+    def ver_carrito
+      carrito = Carrito.first
+      if carrito
+        total = 0.0
+        productos_en_carrito = carrito.productos.map do |producto|
+          cantidad = CarritoProducto.find_by(carrito: carrito, producto: producto).cantidad
+          precio = producto.precio
+          subtotal = cantidad * precio
+          total += subtotal
+
+          {
+            nombre: producto.nombre,
+            descripcion: producto.descripcion,
+            precio: precio,
+            cantidad: cantidad,
+            subtotal: subtotal.round(2)
+          }
+        end
+
+        render json: { items: productos_en_carrito, total: total.round(2) }
+      else
+        render json: { message: "Carrito vacío" }
+      end
+    end
+
   
     def finalizar_compra
       carrito = Carrito.first
