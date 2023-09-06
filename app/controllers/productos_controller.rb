@@ -43,10 +43,56 @@ class ProductosController < ApplicationController
       @producto.destroy
       render json: { message: "Producto eliminado exitosamente" }
     end
+
+
+    def agregar_a_carrito
+      producto_id = params[:producto_id]
+      cantidad = params[:cantidad].to_i
+      producto = Producto.find(producto_id)
+      carrito = Carrito.first_or_initialize
+    
+      if carrito.new_record?
+        carrito.save!
+      end
+    
+      # Verifica si el producto ya está en el carrito
+      carrito_producto = CarritoProducto.find_by(carrito: carrito, producto: producto)
+    
+      if producto.stock < cantidad
+        render json: { message: "Stock insuficiente" }, status: :unprocessable_entity
+      elsif carrito_producto
+        # Si el producto ya está en el carrito, actualiza la cantidad
+        nueva_cantidad = carrito_producto.cantidad + cantidad
+        carrito_producto.update!(cantidad: nueva_cantidad)
+        render json: { message: "Cantidad actualizada en el carrito" }
+      else
+        # Si el producto no está en el carrito, lo agrega
+        CarritoProducto.create!(carrito: carrito, producto: producto, cantidad: cantidad)
+        render json: { message: "Producto agregado al carrito" }
+      end
+    end
+    
+  
+    def finalizar_compra
+      carrito = Carrito.first
+  
+      if carrito
+        carrito.carrito_productos.each do |item|
+          producto = item.producto
+          producto.update!(stock: producto.stock - item.cantidad)
+        end
+  
+        CarritoProducto.where(carrito: carrito).delete_all
+        render json: { message: "Compra finalizada exitosamente" }
+      else
+        render json: { message: "Carrito vacío" }
+      end
+    end
   
     private
     def product_params
-      params.require(:producto).permit(:nombre, :descripcion, :precio, :stock)
+      params.require(:producto).permit(:nombre, :descripcion, :precio, :stock, :image_url)
     end
+    
   end
   
